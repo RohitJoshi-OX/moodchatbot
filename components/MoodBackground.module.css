@@ -1,0 +1,63 @@
+.bgContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ===== Floating Orbs ===== */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.15;
+  filter: blur(60px);
+  animation: floatOrb linear infinite alternate;
+  transition: background 2s ease, opacity 2s ease;
+  will-change: transform;
+}
+
+.orb:nth-child(odd) {
+  opacity: 0.2;
+  filter: blur(40px);
+}
+
+.orb:nth-child(3n) {
+  opacity: 0.25;
+  filter: blur(30px);
+  background: var(--text-secondary);
+}
+
+@keyframes floatOrb {
+  0%   { transform: translate(0, 0) scale(1); }
+  20%  { transform: translate(80px, -60px) scale(1.2); }
+  40%  { transform: translate(-60px, 40px) scale(0.8); }
+  60%  { transform: translate(40px, 80px) scale(1.1); }
+  80%  { transform: translate(-80px, -40px) scale(0.9); }
+  100% { transform: translate(20px, -70px) scale(1.05); }
+}
+
+
+
+/* ===== Grid Overlay ===== */
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ===== Corner Glows ===== */
+.cornerGlow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0.08;
+  filter: blur(40px);
+  transition: background 2s ease, opacity 2s ease;
+}
