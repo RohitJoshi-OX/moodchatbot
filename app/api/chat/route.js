@@ -54,25 +54,27 @@ That's absolutely wonderful to hear! I'm so glad things are going well for you.`
     }
 
     // Create a ReadableStream that processes Groq's Server-Sent Events (SSE)
-    // and pipes clean text chunks directly to the browser
-    const stream = new ReadableStream({
+      const stream = new ReadableStream({
       async start(controller) {
         const reader = groqResponse.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = ''; // <--- Buffer added to handle split JSON chunks!
 
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            // Groq sends SSE lines like: "data: {...json...}"
-            const rawChunk = decoder.decode(value, { stream: true });
-            const lines = rawChunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            // Pop the last element because it might be an incomplete line
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data: ')) continue;
 
-              const data = line.slice(6).trim();
+              const data = trimmed.slice(6).trim();
               if (data === '[DONE]') {
                 controller.close();
                 return;
@@ -82,11 +84,10 @@ That's absolutely wonderful to hear! I'm so glad things are going well for you.`
                 const parsed = JSON.parse(data);
                 const text = parsed.choices?.[0]?.delta?.content || '';
                 if (text) {
-                  // Send only the raw text to the browser
                   controller.enqueue(new TextEncoder().encode(text));
                 }
               } catch {
-                // Ignore malformed JSON chunks
+                // Ignore malformed JSON
               }
             }
           }
