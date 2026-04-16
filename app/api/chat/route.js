@@ -1,6 +1,10 @@
 // PHASE 4: Streaming API Route
 // Instead of waiting for the full reply, we pipe Groq's chunks directly to the browser!
 
+// 🔴 CRITICAL FOR VERCEL: Force edge runtime so streaming actually works in production
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { message } = await request.json();
@@ -20,7 +24,11 @@ export async function POST(request) {
             content: `You are a conversational AI. You MUST always start your response with a mood tag on its own line.
 Choose from exactly one of:
 [MOOD:happy]
+[MOOD:sad]
 [MOOD:angry]
+[MOOD:excited]
+[MOOD:romantic]
+[MOOD:bored]
 [MOOD:mysterious]
 [MOOD:default]
 

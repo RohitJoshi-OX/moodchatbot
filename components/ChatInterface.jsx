@@ -80,7 +80,7 @@ export default function ChatInterface() {
 
         // Parse the [MOOD:xxx] tag from the very beginning of the stream
         if (!moodDetected) {
-          const moodMatch = fullText.match(/^\[MOOD:(happy|angry|mysterious|default)\]\n?/);
+          const moodMatch = fullText.match(/^\[MOOD:\s*([a-zA-Z]+)\s*\]/i);
           if (moodMatch) {
             detectedMood = moodMatch[1];
             setCurrentMood(detectedMood);
@@ -89,8 +89,8 @@ export default function ChatInterface() {
           }
         }
 
-        // Strip any partial mood tag still being received
-        const displayText = fullText.replace(/^\[MOOD:[a-z]*\]?\n?/, "");
+        // Strip any partial or full mood tag so it isn't shown to the user
+        const displayText = fullText.replace(/^\[MOOD:[a-zA-Z\s]*\]?\n?/i, "");
 
         // Update the last message (the bot placeholder) with the growing text
         setMessages(prev => {
