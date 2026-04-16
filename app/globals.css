@@ -122,13 +122,22 @@ body {
 }
 
 /* ===== Main Layout ===== */
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
 .main-layout {
   position: relative;
   z-index: 1;
   padding: 1.5rem 2rem;
   padding-bottom: env(safe-area-inset-bottom, 0.5rem);
-  height: 100vh;
-  height: 100dvh;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,7 +177,20 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
+
+[data-mood="default"] .hero-title::before { content: "🤖"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="happy"] .hero-title::before { content: "🌟"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="angry"] .hero-title::before { content: "😡"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="mysterious"] .hero-title::before { content: "🔮"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="sad"] .hero-title::before { content: "🌧️"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="excited"] .hero-title::before { content: "🚀"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="romantic"] .hero-title::before { content: "💖"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
+[data-mood="bored"] .hero-title::before { content: "🥱"; font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif; -webkit-text-fill-color: initial; }
 
 .hero-subtitle {
   margin: 0.4rem 0 0;

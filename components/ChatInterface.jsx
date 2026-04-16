@@ -4,42 +4,49 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from 'react-markdown';
 import styles from "./ChatInterface.module.css";
 
-export default function ChatInterface() {
+export default function ChatInterface({ sessionId, setSessionId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [currentMood, setCurrentMood] = useState("default");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // PHASE 1: Load from localStorage on mount
+  // Load from MongoDB when sessionId changes
   useEffect(() => {
-    setIsMounted(true);
-    const savedMessages = localStorage.getItem('chat_messages');
-    const savedMood = localStorage.getItem('chat_mood');
-    if (savedMessages && savedMessages !== "[]") {
-      setMessages(JSON.parse(savedMessages));
+    if (sessionId) {
+      fetch(`/api/sessions/${sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) {
+            setMessages(data.messages);
+            setCurrentMood(data.mood);
+          }
+        });
     } else {
+      // New Chat
       setMessages([{ role: "bot", content: "Hello there. I am your experimental conversational AI. Give me something to react to..." }]);
+      setCurrentMood("default");
     }
-    if (savedMood) setCurrentMood(savedMood);
-  }, []);
+  }, [sessionId]);
 
-  // PHASE 1: Save to localStorage whenever messages change (but not while streaming)
+  // Sync to MongoDB whenever messages or mood change (but not while streaming)
   useEffect(() => {
-    if (isMounted && messages.length > 0 && !isStreaming) {
-      localStorage.setItem('chat_messages', JSON.stringify(messages));
-      localStorage.setItem('chat_mood', currentMood);
+    if (sessionId && messages.length > 0 && !isStreaming) {
+      fetch(`/api/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, mood: currentMood })
+      });
     }
-  }, [messages, currentMood, isMounted, isStreaming]);
+  }, [messages, currentMood, isStreaming, sessionId]);
 
   // CSS Mood Transition
   useEffect(() => {
     document.body.setAttribute('data-mood', currentMood);
   }, [currentMood]);
 
-  // Auto-scroll to latest message
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -50,10 +57,23 @@ export default function ChatInterface() {
 
     const userMessage = { role: "user", content: input };
     const currentInput = input;
-
-    // Add user message and an empty bot placeholder
-    setMessages(prev => [...prev, userMessage, { role: "bot", content: "" }]);
     setInput("");
+
+    // Create a new session in DB first if we don't have one
+    let activeSessionId = sessionId;
+    if (!activeSessionId) {
+      try {
+        const res = await fetch('/api/sessions', { method: 'POST' });
+        const data = await res.json();
+        activeSessionId = data._id;
+        setSessionId(activeSessionId);
+      } catch (err) {
+        console.error("Failed to create session", err);
+        return; // Halt if DB fails
+      }
+    }
+
+    setMessages(prev => [...prev, userMessage, { role: "bot", content: "" }]);
     setIsStreaming(true);
 
     try {
@@ -63,36 +83,29 @@ export default function ChatInterface() {
         body: JSON.stringify({ message: currentInput })
       });
 
-      // PHASE 4: Read the stream chunk by chunk!
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
       let fullText = "";
       let moodDetected = false;
-      let detectedMood = "default";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
+        fullText += decoder.decode(value, { stream: true });
 
-        // Parse the [MOOD:xxx] tag from the very beginning of the stream
+        // Parse mood tag
         if (!moodDetected) {
           const moodMatch = fullText.match(/^\[MOOD:\s*([a-zA-Z]+)\s*\]/i);
           if (moodMatch) {
-            detectedMood = moodMatch[1];
-            setCurrentMood(detectedMood);
-            fullText = fullText.replace(moodMatch[0], "");
+            setCurrentMood(moodMatch[1].toLowerCase());
             moodDetected = true;
           }
         }
 
-        // Strip any partial or full mood tag so it isn't shown to the user
+        // Clean string for UI
         const displayText = fullText.replace(/^\[MOOD:[a-zA-Z\s]*\]?\n?/i, "");
 
-        // Update the last message (the bot placeholder) with the growing text
         setMessages(prev => {
           const updated = [...prev];
           updated[updated.length - 1] = { role: "bot", content: displayText };
@@ -112,7 +125,6 @@ export default function ChatInterface() {
     }
   };
 
-  // PHASE 3: Voice Input using Web Speech API
   const handleVoiceInput = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert("Voice input is only supported in Chrome or Edge!");
@@ -130,30 +142,17 @@ export default function ChatInterface() {
     recognition.start();
   };
 
-  const handleClear = () => {
-    localStorage.clear();
-    window.location.reload();
-  };
-
-  if (!isMounted) return null;
-
   return (
     <div className={`glass-container ${styles.chatWrapper}`}>
       <div className={styles.messageList}>
-        <div className={styles.topActions}>
-          <button onClick={handleClear} className={styles.clearBtn}>🗑️ Clear Memory</button>
-        </div>
-
         {messages.map((msg, idx) => (
           <div key={idx} className={`${styles.messageWrapper} ${msg.role === 'user' ? styles.userWrapper : styles.botWrapper}`}>
             <div className={`${styles.bubble} ${msg.role === 'user' ? styles.userBubble : styles.botBubble}`}>
-              {/* PHASE 2: Markdown Rendering */}
               <ReactMarkdown>{msg.content || "▍"}</ReactMarkdown>
             </div>
           </div>
         ))}
 
-        {/* Streaming indicator dots */}
         {isStreaming && (
           <div className={styles.botWrapper}>
             <div className={`${styles.bubble} ${styles.botBubble} ${styles.typingBubble}`}>
@@ -176,7 +175,6 @@ export default function ChatInterface() {
           className={styles.textInput}
           disabled={isStreaming}
         />
-        {/* PHASE 3: Voice Button */}
         <button type="button" onClick={handleVoiceInput} disabled={isStreaming}
           className={`${styles.voiceButton} ${isListening ? styles.listening : ''}`}>
           {isListening ? '🔴' : '🎤'}
