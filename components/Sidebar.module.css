@@ -89,6 +89,28 @@
   flex: 1;
 }
 
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 0.25rem;
+  opacity: 0.5;
+  transition: opacity 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sessionItem:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  background: rgba(255, 50, 50, 0.2);
+  color: red;
+}
 .emptyText {
   color: var(--text-secondary);
   font-size: 0.9rem;

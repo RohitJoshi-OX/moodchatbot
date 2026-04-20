@@ -51,3 +51,21 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+    await connectDB();
+    
+    const session = await ChatSession.findByIdAndDelete(id);
+    
+    if (!session) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Session deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    return NextResponse.json({ error: "Failed to delete session" }, { status: 500 });
+  }
+}

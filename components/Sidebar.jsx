@@ -22,6 +22,23 @@ export default function Sidebar({ currentSessionId, setCurrentSessionId }) {
     }
   };
 
+  const deleteSession = async (id, e) => {
+    e.stopPropagation();
+    if(confirm("Are you sure you want to delete this chat?")) {
+      try {
+        const res = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setSessions(sessions.filter(s => s._id !== id));
+          if (currentSessionId === id) {
+            setCurrentSessionId(null);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to delete session", err);
+      }
+    }
+  };
+
   const createNewChat = () => {
     setCurrentSessionId(null);
     if(window.innerWidth < 768) setIsOpen(false);
@@ -36,7 +53,9 @@ export default function Sidebar({ currentSessionId, setCurrentSessionId }) {
     <>
       {/* Mobile toggle button */}
       <button className={styles.mobileToggle} onClick={() => setIsOpen(!isOpen)}>
-        🍔
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
       {/* Sidebar Container */}
@@ -51,7 +70,7 @@ export default function Sidebar({ currentSessionId, setCurrentSessionId }) {
             <p className={styles.emptyText}>No history yet.</p>
           ) : (
             sessions.map(session => (
-              <button 
+              <div 
                 key={session._id} 
                 className={`${styles.sessionItem} ${currentSessionId === session._id ? styles.active : ''}`}
                 onClick={() => selectSession(session._id)}
@@ -68,7 +87,14 @@ export default function Sidebar({ currentSessionId, setCurrentSessionId }) {
                 <div className={styles.sessionText}>
                   {session.title?.substring(0, 25) || "New Chat"}
                 </div>
-              </button>
+                <button 
+                  className={styles.deleteBtn}
+                  onClick={(e) => deleteSession(session._id, e)}
+                  title="Delete Chat"
+                >
+                  🗑️
+                </button>
+              </div>
             ))
           )}
         </div>

@@ -11,10 +11,14 @@ export default function ChatInterface({ sessionId, setSessionId }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
-
+  const skipFetchRef = useRef(false);
   // Load from MongoDB when sessionId changes
   useEffect(() => {
     if (sessionId) {
+      if (skipFetchRef.current) {
+        skipFetchRef.current = false;
+        return;
+      }
       fetch(`/api/sessions/${sessionId}`)
         .then(res => res.json())
         .then(data => {
@@ -66,6 +70,7 @@ export default function ChatInterface({ sessionId, setSessionId }) {
         const res = await fetch('/api/sessions', { method: 'POST' });
         const data = await res.json();
         activeSessionId = data._id;
+        skipFetchRef.current = true;
         setSessionId(activeSessionId);
       } catch (err) {
         console.error("Failed to create session", err);
